@@ -117,7 +117,7 @@ namespace Avalon.Shared
                     {"Referer", "https://mbasic.facebook.com/" },
                     {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3" }
                 },
-                Content = new StringContent(HttpUtility.HtmlEncode($"email={MailAddress}&pass={_password}&login=Entrar"), Encoding.UTF8, "application/x-www-form-urlencoded")
+                Content = new StringContent($"email={HttpUtility.UrlEncode(MailAddress)}&pass={HttpUtility.UrlEncode(_password)}&login=Entrar", Encoding.UTF8, "application/x-www-form-urlencoded")
             };
 
             response = await _httpClient.SendAsync(request);
@@ -125,10 +125,9 @@ namespace Avalon.Shared
             if (!response.IsSuccessStatusCode)
                 throw new Exception("Unexpected response code.");
 
-            if (CookieContainer
-                .GetCookies(new Uri("https://facebook.com"))
+            if (CookieContainer.GetCookies(new Uri("https://facebook.com"))
                 .OfType<Cookie>()
-                .Any(cookie => cookie.Name != "c_user"))
+                .All(cookie => cookie.Name != "c_user"))
                 throw new InvalidCredentialException("Invalid Facebook account credentials!");
         }
     }
