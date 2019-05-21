@@ -1,10 +1,11 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Text;
+using System.Web;
 using System.Linq;
 using System.Net.Http;
 using System.Diagnostics;
-using System.IO;
 using System.Threading.Tasks;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -116,7 +117,7 @@ namespace Avalon.Shared
                     {"Referer", "https://mbasic.facebook.com/" },
                     {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3" }
                 },
-                Content = new StringContent($"email={MailAddress}&pass={_password}&login=Entrar", Encoding.UTF8, "application/x-www-form-urlencoded")
+                Content = new StringContent(HttpUtility.HtmlEncode($"email={MailAddress}&pass={_password}&login=Entrar"), Encoding.UTF8, "application/x-www-form-urlencoded")
             };
 
             response = await _httpClient.SendAsync(request);
