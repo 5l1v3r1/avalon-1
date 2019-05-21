@@ -4,8 +4,10 @@ using System.Text;
 using System.Linq;
 using System.Net.Http;
 using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Avalon.Shared
 {
@@ -54,6 +56,7 @@ namespace Avalon.Shared
             {
                 UseProxy = true,
                 Proxy = new WebProxy("127.0.0.1:8080"),
+                ClientCertificates = {new X509Certificate(Path.Combine(Environment.CurrentDirectory, "cacert.der"))},
                 UseCookies = true,
                 AllowAutoRedirect = true,
                 CookieContainer = CookieContainer
