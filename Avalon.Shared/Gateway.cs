@@ -52,6 +52,9 @@ namespace Avalon.Shared
             _userAgent = _userAgents[new Random().Next(0, _userAgents.Length)];
 
 #if DEBUG
+            ServicePointManager.ServerCertificateValidationCallback +=
+                (sender, cert, chain, sslPolicyErrors) => true;
+
             _httpClient = new HttpClient(new HttpClientHandler()
             {
                 UseProxy = true,
