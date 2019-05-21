@@ -107,7 +107,7 @@ namespace Avalon.Shared
                 throw new Exception("Unexpected response code.");
 
             if (CookieContainer
-                .GetCookies(new Uri(".facebook.com"))
+                .GetCookies(new Uri("https://facebook.com"))
                 .OfType<Cookie>()
                 .Any(cookie => cookie.Name != "c_user"))
                 throw new InvalidCredentialException();
