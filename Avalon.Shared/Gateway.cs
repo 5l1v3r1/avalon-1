@@ -97,7 +97,8 @@ namespace Avalon.Shared
                 {
                     Headers =
                     {
-                        {"User-Agent", _userAgent }
+                        {"User-Agent", _userAgent },
+                        {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3" }
                     }
                 };
 
@@ -107,13 +108,13 @@ namespace Avalon.Shared
                     throw new Exception("Unexpected response code.");
             }
 
-            request = new HttpRequestMessage(HttpMethod.Post, "https://mbasic.facebook.com/login/device-based/regular/login/")
+            request = new HttpRequestMessage(HttpMethod.Post, "https://mbasic.facebook.com/login/device-based/regular/login/?refsrc=https://mbasic.facebook.com")
             {
                 Headers =
                 {
                     {"User-Agent", _userAgent },
                     {"Referer", "https://mbasic.facebook.com/" },
-                    {"Host", "mbasic.facebook.com" }
+                    {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3" }
                 },
                 Content = new StringContent($"email={MailAddress}&pass={_password}&login=Entrar", Encoding.UTF8, "application/x-www-form-urlencoded")
             };
