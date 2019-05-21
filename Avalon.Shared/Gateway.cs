@@ -110,7 +110,7 @@ namespace Avalon.Shared
                 .GetCookies(new Uri("https://facebook.com"))
                 .OfType<Cookie>()
                 .Any(cookie => cookie.Name != "c_user"))
-                throw new InvalidCredentialException();
+                throw new InvalidCredentialException("Invalid Facebook account credentials!");
         }
     }
 }
