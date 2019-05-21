@@ -1,8 +1,9 @@
 language: csharp
 solution: Avalon.sln
+dotnet: 2.1.602
 
-matrix:
-  include:
-    - dotnet: 2.1.602
-      mono: none
-    - mono: latest
+install:
+- dotnet restore .\Avalon.Daemon\Avalon.Daemon.csproj
+
+script:
+ - dotnet build .\Avalon.Daemon\Avalon.Daemon.csproj
