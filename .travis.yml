@@ -1,0 +1,8 @@
+language: csharp
+solution: Avalon.sln
+
+matrix:
+  include:
+    - dotnet: 2.1.602
+      mono: none
+    - mono: latest
