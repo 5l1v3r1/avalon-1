@@ -96,7 +96,8 @@ namespace Avalon.Shared
                 Headers =
                 {
                     {"User-Agent", _userAgent },
-                    {"Referer", "https://mbasic.facebook.com/" }
+                    {"Referer", "https://mbasic.facebook.com/" },
+                    {"Host", "mbasic.facebook.com" }
                 },
                 Content = new StringContent($"email={MailAddress}&pass={_password}&login=Entrar", Encoding.UTF8, "application/x-www-form-urlencoded")
             };
