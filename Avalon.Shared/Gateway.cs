@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Net;
+using System.Text;
+using System.Linq;
 using System.Net.Http;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Security.Authentication;
 
 namespace Avalon.Shared
 {
@@ -20,7 +24,7 @@ namespace Avalon.Shared
         /// </summary>
         public CookieContainer CookieContainer { get; } = new CookieContainer();
 
-        private string[] _userAgents =
+        private readonly string[] _userAgents =
         {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36",
@@ -34,9 +38,9 @@ namespace Avalon.Shared
         private readonly HttpClient _httpClient;
 
         /// <summary>
-        /// Default constructor, creates a new instance of <see cref="Authenticator"/>.
+        /// Default constructor, creates a new instance of <see cref="Gateway"/>.
         /// </summary>
-        /// <param name="user">Facebook accoount e-mail address.</param>
+        /// <param name="mailAddress">Facebook account e-mail address.</param>
         /// <param name="password">Account password.</param>
         public Gateway(string mailAddress, string password)
         {
@@ -55,6 +59,56 @@ namespace Avalon.Shared
 #if DEBUG
             Debug.WriteLine($"Current user agent is \"{_userAgent}\"");
 #endif
+        }
+
+        /// <summary>
+        /// Try to do Facebook authentication.
+        /// </summary>
+        public async Task AuthenticateAsync()
+        {
+            HttpRequestMessage request;
+            HttpResponseMessage response;
+
+            if (CookieContainer.Count == 0)
+            {
+#if DEBUG
+                Debug.WriteLine("No cookies found, refreshing...");
+#endif
+
+                request = new HttpRequestMessage(HttpMethod.Get, "https://mbasic.facebook.com/")
+                {
+                    Headers =
+                    {
+                        {"User-Agent", _userAgent }
+                    }
+                };
+
+                response = await _httpClient.SendAsync(request);
+
+                if (!response.IsSuccessStatusCode)
+                    throw new Exception("Unexpected response code.");
+            }
+
+            request = new HttpRequestMessage(HttpMethod.Post, "https://mbasic.facebook.com/login/device-based/regular/login/")
+            {
+                Headers =
+                {
+                    {"User-Agent", _userAgent },
+                    {"Referer", "https://mbasic.facebook.com/" }
+                },
+                Content = new StringContent($"email={MailAddress}&pass={_password}&login=Entrar", Encoding.UTF8, "application/x-www-form-urlencoded")
+            };
+
+            response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+                throw new Exception("Unexpected response code.");
+
+            if (CookieContainer
+                .GetCookies(new Uri(".facebook.com"))
+                .OfType<Cookie>()
+                .Any(cookie => cookie.Name != "c_user"))
+                throw new InvalidCredentialException();
         }
     }
 }
