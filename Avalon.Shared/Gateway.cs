@@ -64,6 +64,8 @@ namespace Avalon.Shared
         /// <summary>
         /// Try to do Facebook authentication.
         /// </summary>
+        /// <exception cref="Exception">On unexpected response from Facebook server.</exception>
+        /// <exception cref="InvalidCredentialException">On invalid user account.</exception>
         public async Task AuthenticateAsync()
         {
             HttpRequestMessage request;
