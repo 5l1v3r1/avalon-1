@@ -49,12 +49,24 @@ namespace Avalon.Shared
 
             _userAgent = _userAgents[new Random().Next(0, _userAgents.Length)];
 
+#if DEBUG
             _httpClient = new HttpClient(new HttpClientHandler()
             {
+                UseProxy = true,
+                Proxy = new WebProxy("127.0.0.1:8080"),
                 UseCookies = true,
                 AllowAutoRedirect = true,
                 CookieContainer = CookieContainer
             });
+#else
+            _httpClient = new HttpClient(new HttpClientHandler()
+            {
+
+                UseCookies = true,
+                AllowAutoRedirect = true,
+                CookieContainer = CookieContainer
+            });
+#endif
 
 #if DEBUG
             Debug.WriteLine($"Current user agent is \"{_userAgent}\"");
