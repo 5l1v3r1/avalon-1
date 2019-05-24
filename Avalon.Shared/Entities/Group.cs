@@ -1,4 +1,4 @@
-﻿namespace Avalon.Shared.Entities
+﻿namespace Avalon.Entities
 {
     /// <summary>
     /// Represents a Facebook group.

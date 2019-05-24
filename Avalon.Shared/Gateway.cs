@@ -1,16 +1,16 @@
 ﻿using System;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Web;
-using System.Linq;
-using System.Net.Http;
 using System.Diagnostics;
-using System.Threading.Tasks;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
+using System.Web;
 
-namespace Avalon.Shared
+namespace Avalon
 {
     /// <summary>
     /// Exposes a authentication wrapper for Facebook.
