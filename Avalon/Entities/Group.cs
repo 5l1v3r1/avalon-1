@@ -5,7 +5,8 @@
     /// </summary>
     public class Group
     {
-        public string Title { get; set; }
+        public string Name { get; set; }
         public int Notifications { get; set; }
+        public string Url { get; set; }
     }
 }
