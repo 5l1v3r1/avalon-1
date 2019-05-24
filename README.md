@@ -1,7 +1,7 @@
 # Avalon - Facebook Surveillance 
 We are trying to make a library to help defensive squads to take full surveillance capabilities inside Facebook, without using any public API, only the old and good scraping.
 
-> :warning: **Note**: This is a working in progress tool, don't submit a feature request at this time, instead, help us fixing some [issues](https://github.com/0x00000069/avalon/issues) and helping with testing.: 
+> :warning:**Note**: This is a working in progress tool, don't submit a feature request at this time, instead, help us fixing some [issues](https://github.com/0x00000069/avalon/issues) and helping with testing.: 
 
 ### Example
 
