@@ -1,16 +1,16 @@
 ﻿using System;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Web;
-using System.Linq;
-using System.Net.Http;
 using System.Diagnostics;
-using System.Threading.Tasks;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
+using System.Web;
 
-namespace Avalon.Shared
+namespace Avalon
 {
     /// <summary>
     /// Exposes a authentication wrapper for Facebook.
@@ -36,6 +36,7 @@ namespace Avalon.Shared
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3794.0 Safari/537.36 Edg/76.0.162.0",
             "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/19.10136"
         };
+
         private readonly string _userAgent;
         private readonly string _password;
         private readonly HttpClient _httpClient;
@@ -98,8 +99,8 @@ namespace Avalon.Shared
                 {
                     Headers =
                     {
-                        {"User-Agent", _userAgent },
-                        {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3" }
+                        {"User-Agent", _userAgent},
+                        {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
                     }
                 };
 
@@ -109,15 +110,18 @@ namespace Avalon.Shared
                     throw new Exception("Unexpected response code.");
             }
 
-            request = new HttpRequestMessage(HttpMethod.Post, "https://mbasic.facebook.com/login/device-based/regular/login/?refsrc=https://mbasic.facebook.com")
+            request = new HttpRequestMessage(HttpMethod.Post,
+                "https://mbasic.facebook.com/login/device-based/regular/login/?refsrc=https://mbasic.facebook.com")
             {
                 Headers =
                 {
-                    {"User-Agent", _userAgent },
-                    {"Referer", "https://mbasic.facebook.com/" },
-                    {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3" }
+                    {"User-Agent", _userAgent},
+                    {"Referer", "https://mbasic.facebook.com/"},
+                    {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
                 },
-                Content = new StringContent($"email={HttpUtility.UrlEncode(MailAddress)}&pass={HttpUtility.UrlEncode(_password)}&login=Entrar", Encoding.UTF8, "application/x-www-form-urlencoded")
+                Content = new StringContent(
+                    $"email={HttpUtility.UrlEncode(MailAddress)}&pass={HttpUtility.UrlEncode(_password)}&login=Entrar",
+                    Encoding.UTF8, "application/x-www-form-urlencoded")
             };
 
             response = await _httpClient.SendAsync(request);
@@ -125,9 +129,10 @@ namespace Avalon.Shared
             if (!response.IsSuccessStatusCode)
                 throw new Exception("Unexpected response code.");
 
-            if (CookieContainer.GetCookies(new Uri("https://facebook.com"))
+            if (CookieContainer
+                .GetCookies(new Uri("https://facebook.com"))
                 .OfType<Cookie>()
-                .All(cookie => cookie.Name != "c_user"))
+                .Any(cookie => cookie.Name != "c_user"))
                 throw new InvalidCredentialException("Invalid Facebook account credentials!");
         }
     }
