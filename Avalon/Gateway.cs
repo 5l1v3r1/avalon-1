@@ -1,14 +1,20 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
+using System.Web;
 using System.Net;
+using System.Text;
+using System.Linq;
 using System.Net.Http;
+using System.Threading;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web;
+
+using AngleSharp.Html.Parser;
+
+using Avalon.Entities;
 
 namespace Avalon
 {
@@ -40,6 +46,7 @@ namespace Avalon
         private readonly string _userAgent;
         private readonly string _password;
         private readonly HttpClient _httpClient;
+        private readonly HtmlParser _parser;
 
         /// <summary>
         /// Default constructor, creates a new instance of <see cref="Gateway"/>.
@@ -77,6 +84,8 @@ namespace Avalon
 #if DEBUG
             Debug.WriteLine($"Current user agent is \"{_userAgent}\"");
 #endif
+
+            _parser = new HtmlParser();
         }
 
         /// <summary>
@@ -84,7 +93,7 @@ namespace Avalon
         /// </summary>
         /// <exception cref="Exception">On unexpected response from Facebook server.</exception>
         /// <exception cref="InvalidCredentialException">On invalid user account.</exception>
-        public async Task AuthenticateAsync()
+        public async Task AuthenticateAsync(CancellationToken cancellationToken = default)
         {
             HttpRequestMessage request;
             HttpResponseMessage response;
@@ -124,16 +133,102 @@ namespace Avalon
                     Encoding.UTF8, "application/x-www-form-urlencoded")
             };
 
-            response = await _httpClient.SendAsync(request);
+            response = await _httpClient.SendAsync(request, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception("Unexpected response code.");
 
-            if (CookieContainer
+            var userId = CookieContainer
                 .GetCookies(new Uri("https://facebook.com"))
                 .OfType<Cookie>()
-                .Any(cookie => cookie.Name != "c_user"))
+                .ToList();
+
+            if (userId.All(c => c.Name != "c_user"))
                 throw new InvalidCredentialException("Invalid Facebook account credentials!");
+        }
+
+        public async Task<ICollection<Group>> GetGroupInformationAsync(CancellationToken cancellationToken = default)
+        {
+            var groups = new List<Group>();
+
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                "https://mbasic.facebook.com/groups/?seemore")
+            {
+                Headers =
+                {
+                    {"User-Agent", _userAgent},
+                    {"Referer", "https://mbasic.facebook.com/"},
+                    {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
+                }
+            };
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var soup = await response.Content.ReadAsStringAsync();
+
+            var content = await _parser.ParseDocumentAsync(soup);
+
+            var groupsTable = content
+                .QuerySelectorAll("table")
+                .Where(e => e.InnerHtml.Contains("/groups/") &&
+                            !e.InnerHtml.Contains("/groups/create/") &&
+                            e.HasAttribute("role") &&
+                            e.GetAttribute("role") == "presentation")
+                .ToList();
+
+            foreach (var group in groupsTable)
+            {
+                var tableContent = group
+                    .QuerySelectorAll("tbody > tr > td")
+                    .ToList();
+
+                if (tableContent.Count != 2) continue;
+
+                var dirtyUrl = tableContent[0]
+                    .InnerHtml
+                    .Replace("<a href=\"", string.Empty)
+                    .Replace("</a>", string.Empty);
+
+                var url = dirtyUrl
+                    .Remove(dirtyUrl.IndexOf("\">", StringComparison.Ordinal),
+                        dirtyUrl.Length - dirtyUrl.IndexOf("\">", StringComparison.Ordinal));
+
+                var name = dirtyUrl
+                    .Remove(0, dirtyUrl[dirtyUrl.IndexOf("\">", StringComparison.Ordinal)])
+                    .Trim();
+
+                var notifications = tableContent[1]
+                    .InnerHtml
+                    .Replace("</span>", string.Empty)
+                    .Replace("<span class=", string.Empty)
+                    .Replace(">", string.Empty);
+
+                if (!string.IsNullOrEmpty(notifications))
+                {
+                    notifications = notifications
+                        .Remove(notifications.IndexOf("\"", StringComparison.Ordinal),
+                            notifications.LastIndexOf("\"", StringComparison.Ordinal) + 1)
+                        .Trim();
+
+                    if (int.TryParse(notifications, out var notificationsUpdate))
+                        groups.Add(new Group
+                        {
+                            Url = url,
+                            Name = name,
+                            Notifications = notificationsUpdate
+                        });
+                }
+                else
+                {
+                    groups.Add(new Group
+                    {
+                        Url = url,
+                        Name = name,
+                        Notifications = 0
+                    });
+                }
+            }
+
+            return groups;
         }
     }
 }
