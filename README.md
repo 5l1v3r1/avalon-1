@@ -18,6 +18,18 @@ And create powerful features with our current features:
 
 ![Example of Group listing](<https://i.imgur.com/zykZyiN.gif>)
 
+You can **nuke your entire timeline** with just a function! This is a extreme dangerous thing, if you don't have any backup of your persona timeline. Follow the example:
+
+```csharp
+var gateway = new Gateway("email address", "password");
+await gateway.AuthenticateAsync();
+
+// this can really take a lot of time to execute!
+await gateway.NukeAccountAsync();
+```
+
+And all of your Facebook posts is gone!
+
 ### License
 
 This project is licensed under the terms of the MIT license, and do not have any link with Facebook and/or its brands.
