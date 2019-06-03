@@ -66,7 +66,7 @@ namespace Avalon
                 ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true,
                 UseProxy = true,
                 Proxy = new WebProxy("127.0.0.1:8080"),
-                ClientCertificates = {new X509Certificate2(Path.Combine(Environment.CurrentDirectory, "cacert.der"))},
+                ClientCertificates = { new X509Certificate2(Path.Combine(Environment.CurrentDirectory, "cacert.der")) },
                 UseCookies = true,
                 AllowAutoRedirect = true,
                 CookieContainer = CookieContainer
@@ -229,6 +229,38 @@ namespace Avalon
             }
 
             return groups;
+        }
+
+        public async Task NukeAccountAsync(CancellationToken cancellationToken = default)
+        {
+            HttpRequestMessage request;
+            HttpResponseMessage response;
+
+            request = new HttpRequestMessage(HttpMethod.Get,
+               "https://mbasic.facebook.com/profile.php")
+            {
+                Headers =
+                {
+                    {"User-Agent", _userAgent},
+                    {"Referer", "https://mbasic.facebook.com/"},
+                    {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
+                }
+            };
+
+            response = await _httpClient.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+                throw new Exception("Unexpected response code.");
+
+            var soup = await response.Content.ReadAsStringAsync();
+            var content = await _parser.ParseDocumentAsync(soup);
+
+            var postsActions = content
+              .QuerySelectorAll("div")
+              .Where(e => e.HasAttribute("data-ft") &&
+                          e.HasAttribute("role") &&
+                          e.GetAttribute("role") == "article")
+              .ToList();
         }
     }
 }
