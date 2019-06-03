@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
+using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 
 using Avalon.Entities;
@@ -236,31 +237,158 @@ namespace Avalon
             HttpRequestMessage request;
             HttpResponseMessage response;
 
-            request = new HttpRequestMessage(HttpMethod.Get,
-               "https://mbasic.facebook.com/profile.php")
+            var links = await GetAllTimelilePagesAsync(cancellationToken);
+
+            foreach (var link in links)
             {
-                Headers =
+                request = new HttpRequestMessage(HttpMethod.Get, link)
+                {
+                    Headers =
+                    {
+                        {"User-Agent", _userAgent},
+                        {"Referer", "https://mbasic.facebook.com/"},
+                        {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
+                    }
+                };
+
+                response = await _httpClient.SendAsync(request, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                    throw new Exception("Unexpected response code.");
+
+                var soup = await response.Content.ReadAsStringAsync();
+                var content = await _parser.ParseDocumentAsync(soup);
+
+                var container = content
+                    .QuerySelector("div")
+                    .InnerHtml;
+
+                content = await _parser.ParseDocumentAsync(container);
+
+                var posts = content
+                    .All
+                    .Where(e => e.HasAttribute("role") &&
+                                e.HasAttribute("data-ft"))
+                    .ToList();
+
+                foreach (var post in posts)
+                {
+                    var anchor = post
+                       .QuerySelectorAll("a")
+                       .Cast<IHtmlAnchorElement>()
+                       .FirstOrDefault(e => e.Href.Contains("/nfx/basic/direct_actions/"));
+
+                    if (anchor != null)
+                    {
+                        var deleteLink = anchor
+                           .Href
+                           .Replace("about:///", "https://mbasic.facebook.com/");
+
+                        request = new HttpRequestMessage(HttpMethod.Get, deleteLink)
+                        {
+                            Headers =
+                        {
+                            {"User-Agent", _userAgent},
+                            {"Referer", "https://mbasic.facebook.com/"},
+                            {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
+                        }
+                        };
+
+                        response = await _httpClient.SendAsync(request, cancellationToken);
+
+                        if (!response.IsSuccessStatusCode)
+                            throw new Exception("Unexpected response code.");
+
+                        soup = await response.Content.ReadAsStringAsync();
+                        content = await _parser.ParseDocumentAsync(soup);
+
+                        var formAction = "https://mbasic.facebook.com" +
+                            content
+                                .QuerySelector("form")
+                                .GetAttribute("action");
+
+                        var fbDtsg = content
+                           .QuerySelectorAll("input")
+                           .Cast<IHtmlInputElement>()
+                           .First(e => e.GetAttribute("name") == "fb_dtsg")
+                           .Value;
+
+                        var jazoest = content
+                          .QuerySelectorAll("input")
+                          .Cast<IHtmlInputElement>()
+                          .First(e => e.GetAttribute("name") == "jazoest")
+                          .Value;
+
+                        var postData = $"fb_dtsg={HttpUtility.UrlEncode(fbDtsg)}&jazoest={jazoest}&action_key=DELETE";
+
+                        request = new HttpRequestMessage(HttpMethod.Post, formAction)
+                        {
+                            Headers =
+                        {
+                            {"User-Agent", _userAgent},
+                            {"Referer", deleteLink},
+                            {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
+                        },
+                            Content = new StringContent(postData, Encoding.UTF8, "application/x-www-form-urlencoded")
+                        };
+
+                        await _httpClient.SendAsync(request, cancellationToken);
+#if DEBUG
+                        Debug.WriteLine("Post deleted!");
+#endif
+                    }
+                }
+            }
+        }
+
+        #region Private methods
+
+        private async Task<ICollection<string>> GetAllTimelilePagesAsync(CancellationToken cancellationToken = default)
+        {
+            var stop = false;
+            var links = new List<string>();
+            HttpRequestMessage request;
+            HttpResponseMessage response;
+
+            while (!stop)
+            {
+                var target = links.Any()
+                    ? links.Last()
+                    : "https://mbasic.facebook.com/profile.php";
+
+                request = new HttpRequestMessage(HttpMethod.Get, target)
+                {
+                    Headers =
                 {
                     {"User-Agent", _userAgent},
                     {"Referer", "https://mbasic.facebook.com/"},
                     {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
                 }
-            };
+                };
 
-            response = await _httpClient.SendAsync(request, cancellationToken);
+                response = await _httpClient.SendAsync(request, cancellationToken);
+                var soup = await response.Content.ReadAsStringAsync();
 
-            if (!response.IsSuccessStatusCode)
-                throw new Exception("Unexpected response code.");
+                if (!soup.Contains("/profile/timeline/stream/?cursor"))
+                    break;
 
-            var soup = await response.Content.ReadAsStringAsync();
-            var content = await _parser.ParseDocumentAsync(soup);
+                var content = await _parser.ParseDocumentAsync(soup);
+                var anchor = content
+                    .QuerySelectorAll("a")
+                    .Cast<IHtmlAnchorElement>()
+                    .First(e => e.InnerHtml.Contains("Ver mais histórias"));
 
-            var postsActions = content
-              .QuerySelectorAll("div")
-              .Where(e => e.HasAttribute("data-ft") &&
-                          e.HasAttribute("role") &&
-                          e.GetAttribute("role") == "article")
-              .ToList();
+                var link = anchor.Href
+                    .Replace("&amp;", "&")
+                    .Replace("about:///", "https://mbasic.facebook.com/");
+
+                links.Add(link);
+            }
+
+            links.Insert(0, "https://mbasic.facebook.com/profile.php");
+            return links;
         }
+
+        #endregion
     }
 }
