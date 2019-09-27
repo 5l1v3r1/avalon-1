@@ -1,9 +1,0 @@
-language: csharp
-solution: Avalon.sln
-dotnet: 2.1.602
-
-install:
-- dotnet restore .\Avalon.Daemon\Avalon.Daemon.csproj
-
-script:
- - dotnet build .\Avalon.Daemon\Avalon.Daemon.csproj
