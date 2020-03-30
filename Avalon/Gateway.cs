@@ -32,7 +32,7 @@ namespace Avalon
         /// <summary>
         /// Current Facebook session.
         /// </summary>
-        public CookieContainer CookieContainer { get; } = new CookieContainer();
+        public CookieContainer Session { get; } = new CookieContainer();
 
         private readonly string[] _userAgents =
         {
@@ -70,7 +70,7 @@ namespace Avalon
                 ClientCertificates = {new X509Certificate2(Path.Combine(Environment.CurrentDirectory, "cacert.der"))},
                 UseCookies = true,
                 AllowAutoRedirect = true,
-                CookieContainer = CookieContainer
+                CookieContainer = Session
             });
 #else
             _httpClient = new HttpClient(new HttpClientHandler()
@@ -90,6 +90,15 @@ namespace Avalon
         }
 
         /// <summary>
+        /// Overload constructor, create a new instance of <see cref="Gateway"/> with existent cookies based on a <see cref="CookieContainer"/>.
+        /// </summary>
+        /// <param name="session"></param>
+        public Gateway(CookieContainer session)
+        {
+            Session = session ?? throw new ArgumentNullException(nameof(session));
+        }
+
+        /// <summary>
         /// Try to do Facebook authentication.
         /// </summary>
         /// <exception cref="Exception">On unexpected response from Facebook server.</exception>
@@ -99,7 +108,7 @@ namespace Avalon
             HttpRequestMessage request;
             HttpResponseMessage response;
 
-            if (CookieContainer.Count == 0)
+            if (Session.Count == 0)
             {
 #if DEBUG
                 Debug.WriteLine("No cookies found, refreshing...");
@@ -139,7 +148,7 @@ namespace Avalon
             if (!response.IsSuccessStatusCode)
                 throw new Exception("Unexpected response code.");
 
-            var userId = CookieContainer
+            var userId = Session
                 .GetCookies(new Uri("https://facebook.com"))
                 .OfType<Cookie>()
                 .ToList();
