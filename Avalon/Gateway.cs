@@ -67,7 +67,7 @@ namespace Avalon
                 ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true,
                 UseProxy = true,
                 Proxy = new WebProxy("127.0.0.1:8080"),
-                ClientCertificates = { new X509Certificate2(Path.Combine(Environment.CurrentDirectory, "cacert.der")) },
+                ClientCertificates = {new X509Certificate2(Path.Combine(Environment.CurrentDirectory, "cacert.der"))},
                 UseCookies = true,
                 AllowAutoRedirect = true,
                 CookieContainer = CookieContainer
@@ -271,72 +271,68 @@ namespace Avalon
                                 e.HasAttribute("data-ft"))
                     .ToList();
 
-                foreach (var post in posts)
+                foreach (var deleteLink in from post in posts
+                    select post
+                        .QuerySelectorAll("a")
+                        .Cast<IHtmlAnchorElement>()
+                        .FirstOrDefault(e => e.Href.Contains("/nfx/basic/direct_actions/"))
+                    into anchor
+                    where anchor != null
+                    select anchor
+                        .Href
+                        .Replace("about:///", "https://mbasic.facebook.com/"))
                 {
-                    var anchor = post
-                       .QuerySelectorAll("a")
-                       .Cast<IHtmlAnchorElement>()
-                       .FirstOrDefault(e => e.Href.Contains("/nfx/basic/direct_actions/"));
-
-                    if (anchor != null)
+                    request = new HttpRequestMessage(HttpMethod.Get, deleteLink)
                     {
-                        var deleteLink = anchor
-                           .Href
-                           .Replace("about:///", "https://mbasic.facebook.com/");
-
-                        request = new HttpRequestMessage(HttpMethod.Get, deleteLink)
-                        {
-                            Headers =
+                        Headers =
                         {
                             {"User-Agent", _userAgent},
                             {"Referer", "https://mbasic.facebook.com/"},
                             {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
                         }
-                        };
+                    };
 
-                        response = await _httpClient.SendAsync(request, cancellationToken);
+                    response = await _httpClient.SendAsync(request, cancellationToken);
 
-                        if (!response.IsSuccessStatusCode)
-                            throw new Exception("Unexpected response code.");
+                    if (!response.IsSuccessStatusCode)
+                        throw new Exception("Unexpected response code.");
 
-                        soup = await response.Content.ReadAsStringAsync();
-                        content = await _parser.ParseDocumentAsync(soup);
+                    soup = await response.Content.ReadAsStringAsync();
+                    content = await _parser.ParseDocumentAsync(soup);
 
-                        var formAction = "https://mbasic.facebook.com" +
-                            content
-                                .QuerySelector("form")
-                                .GetAttribute("action");
+                    var formAction = "https://mbasic.facebook.com" + content
+                        .QuerySelector("form")
+                        .GetAttribute("action");
 
-                        var fbDtsg = content
-                           .QuerySelectorAll("input")
-                           .Cast<IHtmlInputElement>()
-                           .First(e => e.GetAttribute("name") == "fb_dtsg")
-                           .Value;
+                    var fbDtsg = content
+                        .QuerySelectorAll("input")
+                        .Cast<IHtmlInputElement>()
+                        .First(e => e.GetAttribute("name") == "fb_dtsg")
+                        .Value;
 
-                        var jazoest = content
-                          .QuerySelectorAll("input")
-                          .Cast<IHtmlInputElement>()
-                          .First(e => e.GetAttribute("name") == "jazoest")
-                          .Value;
+                    var jazoest = content
+                        .QuerySelectorAll("input")
+                        .Cast<IHtmlInputElement>()
+                        .First(e => e.GetAttribute("name") == "jazoest")
+                        .Value;
 
-                        var postData = $"fb_dtsg={HttpUtility.UrlEncode(fbDtsg)}&jazoest={jazoest}&action_key=DELETE";
+                    var postData = $"fb_dtsg={HttpUtility.UrlEncode(fbDtsg)}&jazoest={jazoest}&action_key=DELETE";
 
-                        request = new HttpRequestMessage(HttpMethod.Post, formAction)
-                        {
-                            Headers =
+                    request = new HttpRequestMessage(HttpMethod.Post, formAction)
+                    {
+                        Headers =
                         {
                             {"User-Agent", _userAgent},
                             {"Referer", deleteLink},
                             {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
                         },
-                            Content = new StringContent(postData, Encoding.UTF8, "application/x-www-form-urlencoded")
-                        };
+                        Content = new StringContent(postData, Encoding.UTF8, "application/x-www-form-urlencoded")
+                    };
 
-                        await _httpClient.SendAsync(request, cancellationToken);
+                    await _httpClient.SendAsync(request, cancellationToken);
 #if DEBUG
-                        Debug.WriteLine("Post deleted!");
+                    Debug.WriteLine("Post deleted!");
 #endif
-                    }
                 }
             }
         }
@@ -345,12 +341,11 @@ namespace Avalon
 
         private async Task<ICollection<string>> GetAllTimelilePagesAsync(CancellationToken cancellationToken = default)
         {
-            var stop = false;
             var links = new List<string>();
             HttpRequestMessage request;
             HttpResponseMessage response;
 
-            while (!stop)
+            while (true)
             {
                 var target = links.Any()
                     ? links.Last()
@@ -359,11 +354,11 @@ namespace Avalon
                 request = new HttpRequestMessage(HttpMethod.Get, target)
                 {
                     Headers =
-                {
-                    {"User-Agent", _userAgent},
-                    {"Referer", "https://mbasic.facebook.com/"},
-                    {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
-                }
+                    {
+                        {"User-Agent", _userAgent},
+                        {"Referer", "https://mbasic.facebook.com/"},
+                        {"Accept-Language", "pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3"}
+                    }
                 };
 
                 response = await _httpClient.SendAsync(request, cancellationToken);
