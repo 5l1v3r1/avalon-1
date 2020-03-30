@@ -67,7 +67,6 @@ namespace Avalon
                 ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true,
                 UseProxy = true,
                 Proxy = new WebProxy("127.0.0.1:8080"),
-                ClientCertificates = {new X509Certificate2(Path.Combine(Environment.CurrentDirectory, "cacert.der"))},
                 UseCookies = true,
                 AllowAutoRedirect = true,
                 CookieContainer = Session
