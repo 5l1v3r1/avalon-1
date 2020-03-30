@@ -243,14 +243,11 @@ namespace Avalon
 
         public async Task NukeAccountAsync(CancellationToken cancellationToken = default)
         {
-            HttpRequestMessage request;
-            HttpResponseMessage response;
-
             var links = await GetAllTimelilePagesAsync(cancellationToken);
 
             foreach (var link in links)
             {
-                request = new HttpRequestMessage(HttpMethod.Get, link)
+                var request = new HttpRequestMessage(HttpMethod.Get, link)
                 {
                     Headers =
                     {
@@ -260,7 +257,7 @@ namespace Avalon
                     }
                 };
 
-                response = await _httpClient.SendAsync(request, cancellationToken);
+                var response = await _httpClient.SendAsync(request, cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                     throw new Exception("Unexpected response code.");
